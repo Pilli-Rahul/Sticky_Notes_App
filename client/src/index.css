@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply box-border;
+  }
+
+  body {
+    @apply font-["Space_Grotesk",_"Inter",_"system-ui",_sans-serif] bg-slate-950 text-slate-50 transition-colors duration-300;
+  }
+
+  body.light {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
