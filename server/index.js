@@ -28,7 +28,8 @@ async function startServer() {
 
     console.log("MongoDB connected");
 
-    app.use("/api/notes", require("./routes/noteRoutes"));
+    app.use("/api/auth", require("./routes/auth"));
+    app.use("/api/notes", require("./routes/notes"));
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
