@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import API from "./services/Api";
 import Login from "./pages/login.jsx";
@@ -35,6 +35,8 @@ function App() {
     color: "#7f60f9",
   });
   const [editingId, setEditingId] = useState(null);
+  const [listening, setListening] = useState(false);
+  const recognitionRef = useRef(null);
   const [theme, setTheme] = useState("dark");
 
   const palette = [
@@ -213,6 +215,44 @@ function App() {
     tags: tags.length,
   };
 
+  const toggleVoice = () => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Your browser does not support voice input. Try Chrome or Edge.");
+      return;
+    }
+
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.continuous = true;
+    recognition.interimResults = false;
+
+    recognition.onresult = (e) => {
+      const transcript = Array.from(e.results)
+        .map((r) => r[0].transcript)
+        .join(" ");
+      setForm((prev) => ({
+        ...prev,
+        content: prev.content ? prev.content + " " + transcript : transcript,
+      }));
+    };
+
+    recognition.onend = () => setListening(false);
+    recognition.onerror = () => setListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setListening(true);
+  };
+
   const toggleTheme = () => {
     const next = theme === "dark" ? "light" : "dark";
     setTheme(next);
@@ -354,14 +394,40 @@ function App() {
                         required
                         className="col-span-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-inherit placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none md:col-span-2"
                       />
-                      <textarea
-                        name="content"
-                        value={form.content}
-                        onChange={handleChange}
-                        placeholder="Content"
-                        rows={4}
-                        className="col-span-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-inherit placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none md:col-span-2"
-                      />
+                      <div className="relative col-span-1 md:col-span-2">
+                        <textarea
+                          name="content"
+                          value={form.content}
+                          onChange={handleChange}
+                          placeholder="Content"
+                          rows={4}
+                          className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 pb-14 text-inherit placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none"
+                        />
+                        {/* Mic button — bottom-right inside textarea */}
+                        <div className="absolute bottom-3 right-3">
+                          <button
+                            type="button"
+                            title={listening ? "Stop recording" : "Speak to add content"}
+                            onClick={toggleVoice}
+                            className={`relative flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-lg transition-all duration-300 ${
+                              listening
+                                ? "bg-white/20 border border-red-400 text-red-300 shadow-red-400/20 scale-105"
+                                : "bg-white/15 border border-white/30 text-white shadow-white/10 hover:scale-105 hover:bg-white/25 hover:border-white/50"
+                            }`}
+                          >
+                            {/* Ping ring when listening */}
+                            {listening && (
+                              <span className="absolute -inset-0.5 rounded-full animate-ping bg-red-400 opacity-30" />
+                            )}
+                            {/* Mic icon */}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="relative h-3.5 w-3.5 shrink-0">
+                              <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v8.25a3.75 3.75 0 1 1-7.5 0V4.5Z" />
+                              <path d="M6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291a6.751 6.751 0 0 1-6-6.709v-1.5A.75.75 0 0 1 6 10.5Z" />
+                            </svg>
+                            <span className="relative">{listening ? "Listening…" : "Voice input"}</span>
+                          </button>
+                        </div>
+                      </div>
                       <input
                         name="tags"
                         value={form.tags}
