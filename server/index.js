@@ -14,9 +14,15 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!MONGODB_URI) {
   console.error("Missing MONGODB_URI in environment (.env).");
+  process.exit(1);
+}
+
+if (!JWT_SECRET) {
+  console.error("Missing JWT_SECRET in environment (.env).");
   process.exit(1);
 }
 
@@ -31,8 +37,18 @@ async function startServer() {
     app.use("/api/auth", require("./routes/auth"));
     app.use("/api/notes", require("./routes/notes"));
 
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
+    });
+
+    server.on("error", (err) => {
+      if (err.code === "EADDRINUSE") {
+        console.error(`Port ${PORT} is already in use. Stop the other server or set PORT to a different value in .env.`);
+      } else {
+        console.error("Server error:", err.message);
+      }
+
+      process.exit(1);
     });
 
   } catch (err) {
